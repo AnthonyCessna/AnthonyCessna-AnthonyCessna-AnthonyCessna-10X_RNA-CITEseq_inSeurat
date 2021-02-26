@@ -1,4 +1,4 @@
-library(patchwork)
+
 if(!require(Seurat)){
   install.packages("Seurat")
   library(Seurat)
@@ -25,6 +25,10 @@ if(!require(SeuratData)){
 if(!require(gridExtra)){
   install.packages("gridExtra")
   library(gridExtra)
+}
+if(!require(patchwork)){
+  install.packages("patchwork")
+  library(patchwork)
 }
 # change to directory files are in, or delete line and set directory through RStudio
 setwd("~/Desktop/Seurat/Seurat")
@@ -182,7 +186,7 @@ for(i in H5_names){
 # Pick 500 most variable genes
 for(i in H5_names){
   
-  Seurat_Object <- FindVariableFeatures(get(i), selection.method = "vst", nfeatures = 500)
+  Seurat_Object <- FindVariableFeatures(get(i), selection.method = "vst", nfeatures = 504)
   assign(i, Seurat_Object)
   
 }
@@ -456,6 +460,57 @@ for(i in AntibodyCapture_FeaturePlot_names_vector){
   dev.off()
   }
   
+}
+
+# creates feature plots for RNA data
+RNA_Feature_names_count <- 1
+RNA_FeaturePlot_names_vector <- character()
+for(i in H5_names){
+  
+  RNA_FeaturePlots <- character()
+  RNA_FeaturePlot_Begin <- 1
+  RNA_FeaturePlot_end <- PlotWidth
+  
+  Seurat_Object <- get(i)
+  DefaultAssay(Seurat_Object) <- 'RNA'
+  RNA_Feature_Vector <- get(RNA_Feature_names[RNA_Feature_names_count])
+  
+  for(j in 1:((length(RNA_Feature_Vector)) / PlotWidth)){
+    
+    FeatureVector <- RNA_Feature_Vector[RNA_FeaturePlot_Begin:RNA_FeaturePlot_end]
+    Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
+                        cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
+    Plotname <- paste0("RNAPlot_", j, "_", i)
+    assign(Plotname, Plot)
+    RNA_FeaturePlots[j] <- Plotname
+    RNA_FeaturePlot_Begin <- RNA_FeaturePlot_Begin + PlotWidth
+    RNA_FeaturePlot_end <- RNA_FeaturePlot_end + PlotWidth
+  }
+  
+  RNACaptureName <- paste0("RNA_FeaturePlots_", i)
+  assign(RNACaptureName, RNA_FeaturePlots)
+  RNA_FeaturePlot_names_vector[RNA_Feature_names_count] <- RNACaptureName
+  RNA_Feature_names_count <- RNA_Feature_names_count + 1
+}
+
+# saves RNA feature plot as a pdf
+for(i in RNA_FeaturePlot_names_vector){
+  
+  name <- i
+  RNA_Feature_names_count <- 1
+  pdf(paste0("Plots/", name, ".pdf"), width = 11, height = 7)
+  RNA_FeaturePlots <- get(i)
+  
+  while(RNA_Feature_names_count < length(RNA_FeaturePlots)){
+    
+    tempPlot <- get(RNA_FeaturePlots[RNA_Feature_names_count])/
+                get(RNA_FeaturePlots[RNA_Feature_names_count + 1])
+    
+    plot(tempPlot)
+    RNA_Feature_names_count <- RNA_Feature_names_count + 2
+    
+  }
+  dev.off()
 }
 
 # saves cleaned SeuratObjects as files
