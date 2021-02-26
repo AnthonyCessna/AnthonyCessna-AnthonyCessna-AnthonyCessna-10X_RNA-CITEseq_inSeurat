@@ -1,4 +1,4 @@
-
+library(patchwork)
 if(!require(Seurat)){
   install.packages("Seurat")
   library(Seurat)
@@ -14,7 +14,7 @@ if(!require(tidyverse)){
 
 if(!require(cowplot)){
   install.packages("cowplot")
-  library(tidyverse)
+  library(cowplot)
 }
 
 if(!require(SeuratData)){
@@ -22,6 +22,10 @@ if(!require(SeuratData)){
   library(SeuratData)
 }
  
+if(!require(gridExtra)){
+  install.packages("gridExtra")
+  library(gridExtra)
+}
 # change to directory files are in, or delete line and set directory through RStudio
 setwd("~/Desktop/Seurat/Seurat")
 
@@ -384,7 +388,14 @@ for(i in H5_names){
       }else{
         FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin : length(AntibodyCapture_Feature_vector)]
         Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
-                            cols = c("blue","red"), ncol = PlotWidth, keep.scale = "all" )
+                            cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all" )
+        
+        if(Vector_remainder == 1){
+          Plot <- Plot + plot_spacer() + plot_spacer()
+        }else if(Vector_remainder == 2){
+          
+          Plot <- Plot + plot_spacer()
+        }
         Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
         assign(Plotname, Plot)
         AntibodyCapture_FeaturePlots[PlotCount] <- Plotname
@@ -402,10 +413,11 @@ for(i in H5_names){
   assign(AntibodyCaptureName, AntibodyCapture_FeaturePlots)
   AntibodyCapture_FeaturePlot_names_vector[AntibodyCapture_Feature_names_count] <- AntibodyCaptureName
   AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 1
+  
 }
 
 
-# saves Antibody FeaturePlots as PDF's (under construction)
+# saves Antibody FeaturePlots as PDF's 
 for(i in AntibodyCapture_FeaturePlot_names_vector){
   
   name <- i
@@ -413,45 +425,37 @@ for(i in AntibodyCapture_FeaturePlot_names_vector){
   pdf(paste0("Plots/", name, ".pdf"), width = 11, height = 7)
   AntibodyCapture_FeaturePlots <- get(i)
   
-  
-  
   if(length(AntibodyCapture_FeaturePlots) %% 2 == 0){
     
     while(AntibodyCapture_Feature_names_count < length(AntibodyCapture_FeaturePlots)){
       
-      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count]) /
+      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
+              get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count + 1])
+      
+      plot(tempPlot)
+      AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 2
+      
+    }
+    
+  }else{
+    
+    while(AntibodyCapture_Feature_names_count < length(AntibodyCapture_FeaturePlots)){
+      
+      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
         get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count + 1])
       
-      graphics::plot(tempPlot)
-      
+      plot(tempPlot)
       AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 2
     }
-    
-    
-  } else{
-    
-    Vector_remainder <- length(AntibodyCapture_FeaturePlots) %% 2
-    
-    while(AntibodyCapture_Feature_names_count <= (length(AntibodyCapture_FeaturePlots) - Vector_remainder)){
-      
-      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count]) /
-                  get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count + 1])
-      
-      graphics::plot(tempPlot)
-      
-      AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 2
-    }
-    
-    tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])
-    
-    graphics::plot(tempPlot)
-    
+  
+    DummyRow <- plot_spacer() + plot_spacer() + plot_spacer() 
+    tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
+                DummyRow
+    plot(tempPlot)
+  }
+  dev.off()
   }
   
-  dev.off()
-  
-}
-
 }
 
 # saves cleaned SeuratObjects as files
@@ -521,8 +525,6 @@ for(i in Antibody_capture_names){
 }
 
 # gets metadata tables from all Seurat Objects
-MetaDatanames <- character()
-MetaDatanames_count <- 1
 Matrix_names_count <- 1
 for(i in H5_names){
   
@@ -533,6 +535,21 @@ for(i in H5_names){
   CountMatrix <- CountMatrix %>% full_join(MetaData, by = "Barcode")
   assign(Matrix_names[Matrix_names_count], CountMatrix)
   
+  Matrix_names_count <- Matrix_names_count + 1
+}
+
+# extracts UMAP coordinates and adds them to Adata table
+Matrix_names_count <- 1
+
+for(i in H5_names){
+  
+  Seurat_Object <- get(i)
+  UMAP_coords <- Seurat_Object@reductions[["wnn.umap"]]@cell.embeddings
+  UMAP_coords <- as.data.frame(UMAP_coords)
+  UMAP_coords <- UMAP_coords %>% rownames_to_column(var = "Barcode")
+  CountMatrix <- get(Matrix_names[Matrix_names_count])
+  CountMatrix <- CountMatrix %>% full_join(UMAP_coords, by = "Barcode")
+  assign(Matrix_names[Matrix_names_count], CountMatrix)
   Matrix_names_count <- Matrix_names_count + 1
 }
 
