@@ -178,8 +178,8 @@ for(i in H5_names){
 #Normalize data for Gene and Protein data
 for(i in H5_names){
   
-  Seurat_Object <- NormalizeData(get(i), assay = "CITE", normalization.method = "CLR", margin = 2)
   Seurat_Object <- NormalizeData(get(i))
+  #Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = 'CLR', margin = 2, assay = 'CITE')
   assign(i, Seurat_Object)
 }
 
@@ -363,7 +363,7 @@ for(i in H5_names){
       if(AntibodyCapture_FeaturePlot_end <= length(AntibodyCapture_Feature_vector) - Vector_remainder){
         
         FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin:AntibodyCapture_FeaturePlot_end]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
+        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
                             cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
         Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
         assign(Plotname, Plot)
@@ -380,7 +380,7 @@ for(i in H5_names){
       if(AntibodyCapture_FeaturePlot_end <= length(AntibodyCapture_Feature_vector) - Vector_remainder){
         
         FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin:AntibodyCapture_FeaturePlot_end]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
+        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
                             cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
         Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
         assign(Plotname, Plot)
@@ -391,7 +391,7 @@ for(i in H5_names){
         while_count <- while_count + 1
       }else{
         FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin : length(AntibodyCapture_Feature_vector)]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
+        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
                             cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all" )
         
         if(Vector_remainder == 1){
