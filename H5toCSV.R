@@ -40,8 +40,8 @@ Generate_UMAPS <- TRUE
           RNA_Protein_UMAP <- FALSE
          
 
-AntibodyFeaturePlot <- FALSE
-RNAFeaturePlot <- FALSE
+AntibodyFeaturePlot <- TRUE
+RNAFeaturePlot <- TRUE
 ###############################################################################################
 
 #lists h5 files in current directory
@@ -76,13 +76,17 @@ for(i in H5_names){
   
 }
 
-#gets rid of TCR genes
+#gets rid of TCR genes and BCR genes
 for(i in Gene_Expression_names){
   
   Gene_Expression <- get(i)
   vdj_names <- grepl("^TR[ABGD][VDJC]", rownames(Gene_Expression))
+  
   Gene_Expression <- Gene_Expression[!vdj_names, ]
-  assign(i, Gene_Expression)
+  
+  BCR_names <- grepl("^IG[KGLH][JVCMGAED]", rownames(Gene_Expression))
+  Gene_Expression <- Gene_Expression[!BCR_names, ]
+   assign(i, Gene_Expression)
 }
 
 #Adds -Gene suffix to gene names
@@ -344,12 +348,12 @@ for(i in H5_names){
   Seurat_Object <- get(i)
   DefaultAssay(Seurat_Object) <- 'CITE'
   AntibodyCapture_Feature_vector <- get(AntibodyCapture_Feature_names[AntibodyCapture_Feature_names_count])
-  MaxAntibodyExpressionValue <- max(Seurat_Object@assays[["CITE"]]@scale.data)
-  
+  MaxAntibodyExpressionValue <- max(Seurat_Object@assays[["CITE"]]@data)
+  MinAntibodyExpressionValue <- min(Seurat_Object@assays[["CITE"]]@data)
   Plot <- FeaturePlot(Seurat_Object, features = AntibodyCapture_Feature_vector, reduction = 'wnn.umap', 
-                      combine =  FALSE, keep.scale = "all", max.cutoff = 7.5)
+                      combine =  FALSE, slot = "data", keep.scale = NULL)
   
-  Fix_ColorScale <- scale_color_gradientn( colours = c('lightgrey', 'purple', 'orange', 'red'),  limits = c(0, 7.5))
+  Fix_ColorScale <- scale_color_gradientn( colours = c('lightgrey', 'purple', 'orange', 'red'),  limits = c(MinAntibodyExpressionValue, MaxAntibodyExpressionValue))
   Plot <- lapply(Plot, function (x) x + Fix_ColorScale)
   
   PlotName <- paste0("AntibodyFeatureplot_", i)
@@ -427,9 +431,14 @@ for(i in H5_names){
   DefaultAssay(Seurat_Object) <- 'RNA'
   RNA_Feature_vector <- get(RNA_Feature_names[RNA_Feature_names_count])
   
+  MaxAntibodyExpressionValue <- max(Seurat_Object@assays[["RNA"]]@scale.data)
+  MinAntibodyExpressionValue <- min(Seurat_Object@assays[["RNA"]]@scale.data)
   
-  Plot <- FeaturePlot(Seurat_Object, features = RNA_Feature_vector, reduction = 'wnn.umap', max.cutoff = 10, 
-                      cols = c("lightgray","red"), keep.scale = "all", combine =  FALSE)
+  Plot <- FeaturePlot(Seurat_Object, features = RNA_Feature_vector, reduction = 'wnn.umap',  
+                        combine =  FALSE, keep.scale = NULL, max.cutoff = 5)
+  
+  Fix_ColorScale <- scale_color_gradientn(colours = c('lightgrey', 'purple', 'orange', 'red'),  limits = c(0, 5))
+  Plot <- lapply(Plot, function (x) x + Fix_ColorScale)
   
   PlotName <- paste0("RNAFeatureplot_", i)
   assign(PlotName, Plot)
@@ -441,7 +450,7 @@ for(i in H5_names){
 
 
 
-# saves RNA feature plot as a pdf(in construction)
+# saves RNA feature plot as a pdf
 for(i in RNA_FeaturePlot_names){
   
   name <- i
