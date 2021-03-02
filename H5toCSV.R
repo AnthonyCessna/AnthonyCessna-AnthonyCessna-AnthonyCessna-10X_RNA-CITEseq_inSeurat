@@ -344,10 +344,13 @@ for(i in H5_names){
   Seurat_Object <- get(i)
   DefaultAssay(Seurat_Object) <- 'CITE'
   AntibodyCapture_Feature_vector <- get(AntibodyCapture_Feature_names[AntibodyCapture_Feature_names_count])
+  MaxAntibodyExpressionValue <- max(Seurat_Object@assays[["CITE"]]@scale.data)
   
+  Plot <- FeaturePlot(Seurat_Object, features = AntibodyCapture_Feature_vector, reduction = 'wnn.umap', 
+                      combine =  FALSE, keep.scale = "all", max.cutoff = 7.5)
   
-  Plot <- FeaturePlot(Seurat_Object, features = AntibodyCapture_Feature_vector, reduction = 'wnn.umap', max.cutoff = 10, 
-                      cols = c("lightgray","red"), keep.scale = "all", combine =  FALSE)
+  Fix_ColorScale <- scale_color_gradientn( colours = c('lightgrey', 'purple', 'orange', 'red'),  limits = c(0, 7.5))
+  Plot <- lapply(Plot, function (x) x + Fix_ColorScale)
   
   PlotName <- paste0("AntibodyFeatureplot_", i)
   assign(PlotName, Plot)
@@ -416,54 +419,52 @@ for(i in AntibodyCapture_FeaturePlot_names){
 if(RNAFeaturePlot == TRUE){
 # creates feature plots for RNA data
 RNA_Feature_names_count <- 1
-RNA_FeaturePlot_names_vector <- character()
+RNA_FeaturePlot_names <- character()
 for(i in H5_names){
   
-  RNA_FeaturePlots <- character()
-  RNA_FeaturePlot_Begin <- 1
-  RNA_FeaturePlot_end <- PlotWidth
   
   Seurat_Object <- get(i)
   DefaultAssay(Seurat_Object) <- 'RNA'
-  RNA_Feature_Vector <- get(RNA_Feature_names[RNA_Feature_names_count])
+  RNA_Feature_vector <- get(RNA_Feature_names[RNA_Feature_names_count])
   
-  for(j in 1:((length(RNA_Feature_Vector)) / PlotWidth)){
-    
-    FeatureVector <- RNA_Feature_Vector[RNA_FeaturePlot_Begin:RNA_FeaturePlot_end]
-    Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 10, 
-                        cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
-    Plotname <- paste0("RNAPlot_", j, "_", i)
-    assign(Plotname, Plot)
-    RNA_FeaturePlots[j] <- Plotname
-    RNA_FeaturePlot_Begin <- RNA_FeaturePlot_Begin + PlotWidth
-    RNA_FeaturePlot_end <- RNA_FeaturePlot_end + PlotWidth
+  
+  Plot <- FeaturePlot(Seurat_Object, features = RNA_Feature_vector, reduction = 'wnn.umap', max.cutoff = 10, 
+                      cols = c("lightgray","red"), keep.scale = "all", combine =  FALSE)
+  
+  PlotName <- paste0("RNAFeatureplot_", i)
+  assign(PlotName, Plot)
+  
+  RNA_FeaturePlot_names[RNA_Feature_names_count] <- PlotName
+  RNA_Feature_names_count <- RNA_Feature_names_count + 1
   }
   
-  RNACaptureName <- paste0("RNA_FeaturePlots_", i)
-  assign(RNACaptureName, RNA_FeaturePlots)
-  RNA_FeaturePlot_names_vector[RNA_Feature_names_count] <- RNACaptureName
-  RNA_Feature_names_count <- RNA_Feature_names_count + 1
-}
 
-# saves RNA feature plot as a pdf
-for(i in RNA_FeaturePlot_names_vector){
+
+
+# saves RNA feature plot as a pdf(in construction)
+for(i in RNA_FeaturePlot_names){
   
   name <- i
-  RNA_Feature_names_count <- 1
+  count <- 1
   pdf(paste0("Plots/", name, ".pdf"), width = 11, height = 7)
   RNA_FeaturePlots <- get(i)
+  Length <- length(RNA_FeaturePlots) 
   
-  while(RNA_Feature_names_count < length(RNA_FeaturePlots)){
+  while(count < Length){
     
-    tempPlot <- get(RNA_FeaturePlots[RNA_Feature_names_count])/
-                get(RNA_FeaturePlots[RNA_Feature_names_count + 1])
+    tempPlot1 <- RNA_FeaturePlots[[count]] + RNA_FeaturePlots[[count + 1]]+ RNA_FeaturePlots[[count + 2]]
+    tempPlot2 <- RNA_FeaturePlots[[count + 3]] + RNA_FeaturePlots[[count + 4]] + RNA_FeaturePlots[[count + 5]]
     
-    plot(tempPlot)
-    RNA_Feature_names_count <- RNA_Feature_names_count + 2
+    tempPlot3 <- tempPlot1 / tempPlot2
+    
+    plot(tempPlot3)
+    count <- count + 6
     
   }
   dev.off()
 }
+  
+  
   }
 }
 # saves cleaned SeuratObjects as files
