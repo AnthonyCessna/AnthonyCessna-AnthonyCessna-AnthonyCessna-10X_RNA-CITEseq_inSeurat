@@ -40,7 +40,8 @@ Generate_UMAPS <- TRUE
           RNA_Protein_UMAP <- FALSE
          
 
-
+AntibodyFeaturePlot <- FALSE
+RNAFeaturePlot <- FALSE
 ###############################################################################################
 
 #lists h5 files in current directory
@@ -179,7 +180,7 @@ for(i in H5_names){
 for(i in H5_names){
   
   Seurat_Object <- NormalizeData(get(i))
-  #Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = 'CLR', margin = 2, assay = 'CITE')
+  Seurat_Object <- NormalizeData(Seurat_Object, normalization.method = 'CLR', margin = 2, assay = 'CITE')
   assign(i, Seurat_Object)
 }
 
@@ -333,135 +334,86 @@ for(i in H5_names){
 }
 
 if(WNN_UMAP == TRUE){
+
+  if(AntibodyFeaturePlot == TRUE){
 # creates feature plots for Antibody capture data at specified width
 AntibodyCapture_Feature_names_count <- 1
-PlotWidth <- 3
-AntibodyCapture_FeaturePlot_names_vector <- character()
+AntibodyCapture_FeaturePlot_names <- character()
 for(i in H5_names){
-  AntibodyCapture_FeaturePlots <- character()
-  AntibodyCapture_FeaturePlot_begin <- 1
-  AntibodyCapture_FeaturePlot_end <- PlotWidth
-  PlotCount <- 1
+  
   Seurat_Object <- get(i)
   DefaultAssay(Seurat_Object) <- 'CITE'
   AntibodyCapture_Feature_vector <- get(AntibodyCapture_Feature_names[AntibodyCapture_Feature_names_count])
   
   
-  Vector_remainder <- length(AntibodyCapture_Feature_vector) %% PlotWidth
+  Plot <- FeaturePlot(Seurat_Object, features = AntibodyCapture_Feature_vector, reduction = 'wnn.umap', max.cutoff = 10, 
+                      cols = c("lightgray","red"), keep.scale = "all", combine =  FALSE)
   
-  if(is.nan(Vector_remainder/Vector_remainder)){
-  while_end <- ((length(AntibodyCapture_Feature_vector) - Vector_remainder) / PlotWidth)
-  }else{
-    
-    while_end <- ((length(AntibodyCapture_Feature_vector) - Vector_remainder) / PlotWidth) + 1
-  }
-  while_count <- 1
-  while(while_count <= while_end){
+  PlotName <- paste0("AntibodyFeatureplot_", i)
+  assign(PlotName, Plot)
   
-    if(Vector_remainder == 0){
-      
-      if(AntibodyCapture_FeaturePlot_end <= length(AntibodyCapture_Feature_vector) - Vector_remainder){
-        
-        FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin:AntibodyCapture_FeaturePlot_end]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
-                            cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
-        Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
-        assign(Plotname, Plot)
-        AntibodyCapture_FeaturePlots[PlotCount] <- Plotname
-        PlotCount <- PlotCount + 1
-        AntibodyCapture_FeaturePlot_begin <- AntibodyCapture_FeaturePlot_begin + PlotWidth
-        AntibodyCapture_FeaturePlot_end <- AntibodyCapture_FeaturePlot_end + PlotWidth 
-        while_count <- while_count + 1
-      
-      
-      }
-    } else{
-      
-      if(AntibodyCapture_FeaturePlot_end <= length(AntibodyCapture_Feature_vector) - Vector_remainder){
-        
-        FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin:AntibodyCapture_FeaturePlot_end]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
-                            cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all")
-        Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
-        assign(Plotname, Plot)
-        AntibodyCapture_FeaturePlots[PlotCount] <- Plotname
-        PlotCount <- PlotCount + 1
-        AntibodyCapture_FeaturePlot_begin <- AntibodyCapture_FeaturePlot_begin + PlotWidth
-        AntibodyCapture_FeaturePlot_end <- AntibodyCapture_FeaturePlot_end + PlotWidth 
-        while_count <- while_count + 1
-      }else{
-        FeatureVector <- AntibodyCapture_Feature_vector[AntibodyCapture_FeaturePlot_begin : length(AntibodyCapture_Feature_vector)]
-        Plot <- FeaturePlot(Seurat_Object, features = FeatureVector, reduction = 'wnn.umap', max.cutoff = 50, 
-                            cols = c("lightgray","red"), ncol = PlotWidth, keep.scale = "all" )
-        
-        if(Vector_remainder == 1){
-          Plot <- Plot + plot_spacer() + plot_spacer()
-        }else if(Vector_remainder == 2){
-          
-          Plot <- Plot + plot_spacer()
-        }
-        Plotname <- paste0("AntibodyCapturePlot_", PlotCount, "_", i)
-        assign(Plotname, Plot)
-        AntibodyCapture_FeaturePlots[PlotCount] <- Plotname
-        PlotCount <- PlotCount + 1
-        
-        while_count <- while_count + 1
-      }
-      
-      
-      
-    }
-  
-  }
-  AntibodyCaptureName <- paste0("AntibodyCapture_FeaturePlots_",i)
-  assign(AntibodyCaptureName, AntibodyCapture_FeaturePlots)
-  AntibodyCapture_FeaturePlot_names_vector[AntibodyCapture_Feature_names_count] <- AntibodyCaptureName
+  AntibodyCapture_FeaturePlot_names[AntibodyCapture_Feature_names_count] <- PlotName
   AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 1
-  
-}
+  }
 
 
 # saves Antibody FeaturePlots as PDF's 
-for(i in AntibodyCapture_FeaturePlot_names_vector){
+for(i in AntibodyCapture_FeaturePlot_names){
   
   name <- i
-  AntibodyCapture_Feature_names_count <- 1
+  count <- 1
   pdf(paste0("Plots/", name, ".pdf"), width = 11, height = 7)
   AntibodyCapture_FeaturePlots <- get(i)
-  
-  if(length(AntibodyCapture_FeaturePlots) %% 2 == 0){
+  Length <- length(AntibodyCapture_FeaturePlots)
+  Remainder <- Length %% 6
     
-    while(AntibodyCapture_Feature_names_count < length(AntibodyCapture_FeaturePlots)){
+    while(count < (Length - Remainder)){
       
-      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
-              get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count + 1])
+      tempPlot1 <- AntibodyCapture_FeaturePlots[[count]]+AntibodyCapture_FeaturePlots[[count + 1]]+AntibodyCapture_FeaturePlots[[count + 2]]
+      tempPlot2 <- AntibodyCapture_FeaturePlots[[count + 3]]+AntibodyCapture_FeaturePlots[[count + 4]]+AntibodyCapture_FeaturePlots[[count + 5]]
       
-      plot(tempPlot)
-      AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 2
+      tempPlot3 <- tempPlot1 / tempPlot2
+      
+      plot(tempPlot3)
+      count <- count + 6
       
     }
     
-  }else{
-    
-    while(AntibodyCapture_Feature_names_count < length(AntibodyCapture_FeaturePlots)){
-      
-      tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
-        get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count + 1])
-      
-      plot(tempPlot)
-      AntibodyCapture_Feature_names_count <- AntibodyCapture_Feature_names_count + 2
-    }
+   if(Remainder == 1){
+     
+     tempPlot1 <- AntibodyCapture_FeaturePlots[[count]] + plot_spacer() + plot_spacer()
+     dummyPlot <- plot_spacer() + plot_spacer() + plot_spacer()
+     tempPlot1 <- tempPlot1/dummyPlot
+     plot(tempPlot1)
+   }else if(Remainder == 2){
+     tempPlot1 <- AntibodyCapture_FeaturePlots[[count]] + AntibodyCapture_FeaturePlots[[count + 1]] + plot_spacer()
+     dummyPlot <- plot_spacer() + plot_spacer() + plot_spacer()
+     tempPlot1 <- tempPlot1/dummyPlot
+     plot(tempPlot1)
+   }else if(Remainder == 3){
+     tempPlot1 <- AntibodyCapture_FeaturePlots[[count]]+AntibodyCapture_FeaturePlots[[count + 1]]+AntibodyCapture_FeaturePlots[[count + 2]]
+     dummyPlot <- plot_spacer() + plot_spacer() + plot_spacer()
+     tempPlot1 <- tempPlot1/dummyPlot
+     plot(tempPlot1)
+   }else if(Remainder == 4){
+     tempPlot1 <- AntibodyCapture_FeaturePlots[[count]]+AntibodyCapture_FeaturePlots[[count + 1]]+AntibodyCapture_FeaturePlots[[count + 2]]
+     tempPlot2 <- AntibodyCapture_FeaturePlots[[count + 3]]+ plot_spacer() + plot_spacer()
+     tempPlot1 <- tempPlot1/tempPlot2
+     plot(tempPlot1)
+   }else if(Remainder == 5){
+     tempPlot1 <- AntibodyCapture_FeaturePlots[[count]]+AntibodyCapture_FeaturePlots[[count + 1]]+AntibodyCapture_FeaturePlots[[count + 2]]
+     tempPlot2 <- AntibodyCapture_FeaturePlots[[count + 3]]+AntibodyCapture_FeaturePlots[[count + 4]] + plot_spacer()
+     tempPlot1 <- tempPlot1/tempPlot2
+     plot(tempPlot1)
+   }
   
-    DummyRow <- plot_spacer() + plot_spacer() + plot_spacer() 
-    tempPlot <- get(AntibodyCapture_FeaturePlots[AntibodyCapture_Feature_names_count])/
-                DummyRow
-    plot(tempPlot)
-  }
+  
   dev.off()
-  }
-  
 }
-
+  
+}  
+    
+if(RNAFeaturePlot == TRUE){
 # creates feature plots for RNA data
 RNA_Feature_names_count <- 1
 RNA_FeaturePlot_names_vector <- character()
@@ -512,7 +464,8 @@ for(i in RNA_FeaturePlot_names_vector){
   }
   dev.off()
 }
-
+  }
+}
 # saves cleaned SeuratObjects as files
 for(i in H5_names){
   
