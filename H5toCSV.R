@@ -200,6 +200,9 @@ for(i in H5_names){
 for(i in H5_names){
   Seurat_Object <- get(i)
   VariableFeatures <- rownames(Seurat_Object[["CITE"]])
+  ExcludeSav <- grepl("#", VariableFeatures)
+  VariableFeatures <- VariableFeatures[!ExcludeSav]
+  
   VariableFeatures(Seurat_Object, assay = "CITE") <- VariableFeatures
   assign(i, Seurat_Object)
 
