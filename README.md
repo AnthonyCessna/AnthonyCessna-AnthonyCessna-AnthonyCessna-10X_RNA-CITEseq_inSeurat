@@ -1,1 +1,2 @@
 # AnthonyCessna-AnthonyCessna-AnthonyCessna-10X_RNA-CITEseq_inSeurat
+This repo contains an R script which takes a 10x .h5 file with CITE seq data and preforms the Seurat preprocessing. After the script creates a Seurat object it runs PCA dimensionality reduction and creates a wnn UMAP. The script also creates FeaturePlots of the RNA and Antibody capture markers overlaid on the wnnUMAP. Script saves all of these plots as PDF's. The script also creates useful csv files and RDS files for further data analysis.
